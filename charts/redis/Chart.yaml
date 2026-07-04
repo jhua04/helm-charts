@@ -12,7 +12,7 @@ keywords:
   - key-value
 home: https://jhua04.github.io
 sources:
-  - https://github.com/jhua04/helm-charts/redis-chart
+  - https://github.com/jhua04/helm-charts/redis
 maintainers:
   - name: Jie Hua
     email: jhua04@gmail.com
