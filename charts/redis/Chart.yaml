@@ -3,7 +3,7 @@ name: redis
 description: A customized redis chart for kubernetes deployments
 type: application
 version: 0.1.0
-appVersion: "1.16.0"
+appVersion: "8.8.0"
 icon: https://github.com/jhua04/helm-charts/tree/main/images/redis.png
 keywords:
   - redis

@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "redis.fullname" . }}-server
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "redis.labels" . | nindent 4 }}
 spec:
@@ -34,38 +35,54 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.redis.service.port }}
+            - name: redis
+              containerPort: {{ .Values.redis.port }}
               protocol: TCP
-          {{- with .Values.livenessProbe }}
           livenessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.readinessProbe }}
+            initialDelaySeconds: {{ .Values.redis.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.redis.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.redis.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.redis.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.redis.livenessProbe.failureThreshold }}
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/redis_health.sh
           readinessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            initialDelaySeconds: {{ .Values.redis.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.redis.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.redis.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.redis.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.redis.readinessProbe.failureThreshold }}
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/redis_health.sh
+          startupProbe:
+            initialDelaySeconds: {{ .Values.redis.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.redis.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.redis.startupProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.redis.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.redis.startupProbe.failureThreshold }}
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/redis_health.sh
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
+
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            - name: redis-health
+              mountPath: /health
+              readOnly: true
       volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        - name: redis-health
+          configMap:
+            name: {{ include "redis.fullname" . }}-config
+            defaultMode: 0755
+     

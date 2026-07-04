@@ -8,7 +8,7 @@ metadata:
 spec:
   type: {{ .Values.redis.service.type }}
   ports:
-    - name: tcp-server
+    - name: redis-server
       port: {{ .Values.redis.port }}
       protocol: TCP
       targetPort: redis
