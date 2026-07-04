@@ -1,7 +1,7 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: {{ include "redis-chart.fullname" . }}
+  name: {{ include "redis-chart.fullname" . }}-server
   labels:
     {{- include "redis-chart.labels" . | nindent 4 }}
 spec:
