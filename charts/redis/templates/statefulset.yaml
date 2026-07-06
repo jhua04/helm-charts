@@ -18,21 +18,37 @@ spec:
       {{- end }}
       labels:
         {{- include "redis.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        release: {{ .Release.Name }}
+        app: {{ include "redis.name" . }}
     spec:
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: config-init
+          image: "{{ .Values.configInitImage.repository }}:{{ .Values.configInitImage.tag }}"
+          imagePullPolicy: {{ .Values.configInitImage.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - /scripts/config-init.sh
+          volumeMounts:
+            - name: redis-scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: redis-config
+              mountPath: /config
+              readOnly: true
+            - name: data
+              mountPath: /data
       containers:
-        - name: {{ .Chart.Name }}
+        - name: redis
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: redis
@@ -48,7 +64,7 @@ spec:
               command:
                 - sh
                 - -c
-                - /health/redis_health.sh
+                - /scripts/redis_health.sh
           readinessProbe:
             initialDelaySeconds: {{ .Values.redis.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.redis.readinessProbe.periodSeconds }}
@@ -59,7 +75,7 @@ spec:
               command:
                 - sh
                 - -c
-                - /health/redis_health.sh
+                - /scripts/redis_health.sh
           startupProbe:
             initialDelaySeconds: {{ .Values.redis.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.redis.startupProbe.periodSeconds }}
@@ -70,19 +86,25 @@ spec:
               command:
                 - sh
                 - -c
-                - /health/redis_health.sh
+                - /scripts/redis_health.sh
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-
           volumeMounts:
-            - name: redis-health
-              mountPath: /health
+            - name: redis-scripts
+              mountPath: /scripts
               readOnly: true
       volumes:
-        - name: redis-health
+        - name: redis-scripts
+          configMap:
+            name: {{ include "redis.fullname" . }}-scripts
+            defaultMode: 0755
+        - name: redis-config
           configMap:
             name: {{ include "redis.fullname" . }}-config
             defaultMode: 0755
+        - name: data
+          emptyDir:
+            sizeLimit: {{ .Values.persistence.size }}
      

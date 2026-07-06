@@ -6,5 +6,5 @@ metadata:
   labels:
     {{- include "redis.labels" . | nindent 4 }}
 data:
-  redis_health.sh: |
-{{- include "redis_health.sh" . | nindent 4 }}
+  redis.conf: |
+{{- include "redis.conf" . | nindent 4 }}
